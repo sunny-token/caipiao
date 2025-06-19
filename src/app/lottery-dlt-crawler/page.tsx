@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import {
   Pagination,
@@ -21,20 +22,20 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 // 定义类型
-interface LotteryItem {
+interface DLTItem {
   issueNumber: string;
   openDate: string;
   openNumbers: {
     red: string[];
-    blue: string;
+    blue: string[];
   };
 }
 
-export default function LotteryCrawlerPage() {
+export default function DLTCrawlerPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [lotteryList, setLotteryList] = useState<LotteryItem[]>([]);
+  const [lotteryList, setLotteryList] = useState<DLTItem[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -45,12 +46,10 @@ export default function LotteryCrawlerPage() {
     setListLoading(true);
     try {
       const res = await fetch(
-        `/api/crawl-lottery?page=${page}&pageSize=${pageSize}`,
+        `/api/crawl-dlt?page=${page}&pageSize=${pageSize}`,
       );
       const data = await res.json();
-      console.log("data", data);
       const pageData = data?.data;
-
       if (Array.isArray(pageData.list)) {
         // 解析每个item的openNumbers
         const parsedData = pageData.list.map(
@@ -62,8 +61,6 @@ export default function LotteryCrawlerPage() {
                 : item.openNumbers,
           }),
         );
-        console.log("parsedData", parsedData);
-
         setLotteryList(parsedData);
         setTotalPages(Math.ceil(pageData.total / pageSize));
         setCurrentPage(page);
@@ -87,7 +84,7 @@ export default function LotteryCrawlerPage() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch("/api/crawl-lottery", {
+      const res = await fetch("/api/crawl-dlt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -113,11 +110,11 @@ export default function LotteryCrawlerPage() {
       <Button
         variant="outline"
         className="mb-4 px-8 py-3 rounded-full font-bold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-purple-500 hover:to-blue-500 hover:scale-105 border-0"
-        onClick={() => router.push("/lottery-dlt-crawler")}
+        onClick={() => router.push("/lottery-crawler")}
       >
-        去大乐透爬虫
+        去双色球爬虫
       </Button>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}>双色球开奖爬虫</h1>
+      <h1 style={{ fontSize: 24, marginBottom: 16 }}>大乐透开奖爬虫</h1>
       <div
         style={{
           marginBottom: 16,
@@ -139,7 +136,7 @@ export default function LotteryCrawlerPage() {
         >
           <option value="all">所有年份</option>
           {Array.from(
-            { length: new Date().getFullYear() - 1999 },
+            { length: new Date().getFullYear() - 2006 },
             (_, i) => new Date().getFullYear() - i,
           ).map((year) => (
             <option key={year} value={year}>
@@ -177,7 +174,8 @@ export default function LotteryCrawlerPage() {
                   <TableRow>
                     <TableHead>期号</TableHead>
                     <TableHead>开奖日期</TableHead>
-                    <TableHead>开奖号码</TableHead>
+                    <TableHead>红球</TableHead>
+                    <TableHead>蓝球</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -207,23 +205,28 @@ export default function LotteryCrawlerPage() {
                             </span>
                           ),
                         )}
-                        {item.openNumbers?.blue && (
-                          <span
-                            style={{
-                              display: "inline-block",
-                              width: 28,
-                              height: 28,
-                              lineHeight: "28px",
-                              borderRadius: "50%",
-                              background: "#2563eb",
-                              color: "#fff",
-                              textAlign: "center",
-                              marginLeft: 8,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {item.openNumbers.blue}
-                          </span>
+                      </TableCell>
+                      <TableCell>
+                        {item.openNumbers?.blue?.map(
+                          (num: string, idx: number) => (
+                            <span
+                              key={num + idx}
+                              style={{
+                                display: "inline-block",
+                                width: 28,
+                                height: 28,
+                                lineHeight: "28px",
+                                borderRadius: "50%",
+                                background: "#2563eb",
+                                color: "#fff",
+                                textAlign: "center",
+                                marginRight: 4,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {num}
+                            </span>
+                          ),
                         )}
                       </TableCell>
                     </TableRow>
