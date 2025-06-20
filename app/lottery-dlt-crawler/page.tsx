@@ -8,7 +8,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from "../../components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -16,9 +16,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+} from "../../components/ui/table";
+import { formatDate } from "../../lib/utils";
+import { Button } from "../../components/ui/button";
 import { useRouter } from "next/navigation";
 
 // 定义类型

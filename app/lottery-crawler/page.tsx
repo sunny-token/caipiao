@@ -7,7 +7,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from "../../components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -15,9 +15,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+} from "../../components/ui/table";
+import { formatDate } from "../../lib/utils";
+import { Button } from "../../components/ui/button";
 import { useRouter } from "next/navigation";
 
 // 定义类型
@@ -242,6 +242,7 @@ export default function LotteryCrawlerPage() {
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
+                      size="default"
                       onClick={() =>
                         currentPage > 1 && handlePageChange(currentPage - 1)
                       }
@@ -253,6 +254,7 @@ export default function LotteryCrawlerPage() {
                   </PaginationItem>
                   <PaginationItem>
                     <PaginationLink
+                      size="default"
                       onClick={() => handlePageChange(1)}
                       isActive={currentPage === 1}
                       style={{ cursor: "pointer" }}
@@ -262,7 +264,7 @@ export default function LotteryCrawlerPage() {
                   </PaginationItem>
                   {currentPage > 4 && (
                     <PaginationItem>
-                      <PaginationLink>...</PaginationLink>
+                      <PaginationLink size="default">...</PaginationLink>
                     </PaginationItem>
                   )}
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -276,6 +278,7 @@ export default function LotteryCrawlerPage() {
                     .map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
+                          size="default"
                           onClick={() => handlePageChange(page)}
                           isActive={currentPage === page}
                           style={{ cursor: "pointer" }}
@@ -286,12 +289,13 @@ export default function LotteryCrawlerPage() {
                     ))}
                   {currentPage < totalPages - 3 && (
                     <PaginationItem>
-                      <PaginationLink>...</PaginationLink>
+                      <PaginationLink size="default">...</PaginationLink>
                     </PaginationItem>
                   )}
                   {totalPages > 1 && (
                     <PaginationItem>
                       <PaginationLink
+                        size="default"
                         onClick={() => handlePageChange(totalPages)}
                         isActive={currentPage === totalPages}
                         style={{ cursor: "pointer" }}
@@ -302,6 +306,7 @@ export default function LotteryCrawlerPage() {
                   )}
                   <PaginationItem>
                     <PaginationNext
+                      size="default"
                       onClick={() =>
                         currentPage < totalPages &&
                         handlePageChange(currentPage + 1)

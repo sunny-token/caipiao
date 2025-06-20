@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "../../../generated/prisma";
 import * as cheerio from "cheerio";
+import prismaService from "../../../lib/prismaService";
 
-const prisma = new PrismaClient();
-
-type DLTResult = {
+type SSQResult = {
   issueNumber: string;
   openDate: string;
   openNumbers: string;
@@ -18,19 +16,20 @@ export async function POST(req: NextRequest) {
   try {
     const { year = "all" } = await req.json();
     let currentYear = new Date().getFullYear();
-    const results: DLTResult[] = [];
+    const results: SSQResult[] = [];
 
+    // 如果指定了具体年份，只查询该年份
     if (year !== "all") {
       const data = await fetchYearData(parseInt(year));
       results.push(...data);
     } else {
+      // 查询所有年份，直到没有数据为止
       let hasData = true;
-      while (hasData && currentYear >= 2007) {
-        // 大乐透从2007年开始
+      while (hasData && currentYear >= 2000) {
+        // 设置一个合理的最早年份
         const yearData = await fetchYearData(currentYear);
         const firstData = yearData[0];
         const firstDataYear = firstData.openDate.split("-")[0];
-
         if (firstDataYear !== currentYear.toString()) {
           // 没有数据
           console.log("没有数据", currentYear, ",", firstDataYear);
@@ -44,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 批量写入数据库
-    const created = await prisma.dLTResult.createMany({
+    const created = await prismaService.getPrismaClient().sSQResult.createMany({
       data: results.map((item) => ({
         issueNumber: item.issueNumber,
         openDate: new Date(item.openDate),
@@ -72,7 +71,7 @@ async function fetchYearData(year: number) {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: `lotid=dlt&limit=&year=${year}`,
+    body: `lotid=ssq&limit=&year=${year}`,
   });
   const html = await res.text();
   const $ = cheerio.load(html);
@@ -88,15 +87,13 @@ async function fetchYearData(year: number) {
     const openDate = $(tds[1]).text().trim();
     const openNumbersRaw = $(tds[2]).text().trim();
 
-    // 大乐透格式：前区+后区
-    // 例：01 02 03 04 05+06 07
+    // 双色球格式：前区+后区
     const numbers = openNumbersRaw.split(/\s+/);
-    const tmpRed = numbers[0] ?? "";
+    const tmpRed = numbers[0];
     const red = tmpRed.match(/.{2}/g) || [];
-    const tmpBlue = numbers[1] ?? "";
-    const blue = tmpBlue.match(/.{2}/g) || [];
-    const openNumbers = JSON.stringify({ red, blue });
+    const blue = numbers[1];
 
+    const openNumbers = JSON.stringify({ red, blue });
     const ballOrder = $(tds[3]).text().trim();
     const totalBet = $(tds[4]).text().trim();
     const jackpot = $(tds[5]).text().trim();
@@ -121,14 +118,21 @@ export async function GET(req: NextRequest) {
     const pageSize = parseInt(searchParams.get("pageSize") || "10");
     const skip = (page - 1) * pageSize;
 
-    const [total, results] = await Promise.all([
-      prisma.dLTResult.count(),
-      prisma.dLTResult.findMany({
-        skip,
-        take: pageSize,
-        orderBy: { issueNumber: "desc" },
-      }),
-    ]);
+    console.log(
+      "prismaService.getPrismaClient():",
+      prismaService.getPrismaClient(),
+    );
+    // 获取总数
+    const total = await prismaService.getPrismaClient().sSQResult.count();
+
+    // 获取分页数据
+    const results = await prismaService.getPrismaClient().sSQResult.findMany({
+      skip,
+      take: pageSize,
+      orderBy: {
+        issueNumber: "desc",
+      },
+    });
 
     return NextResponse.json({
       success: true,
