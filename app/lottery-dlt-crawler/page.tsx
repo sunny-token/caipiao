@@ -20,83 +20,45 @@ import {
 import { formatDate } from "../../lib/utils";
 import { Button } from "../../components/ui/button";
 import { useRouter } from "next/navigation";
-
-// 定义类型
-interface DLTItem {
-  issueNumber: string;
-  openDate: string;
-  openNumbers: {
-    red: string[];
-    blue: string[];
-  };
-}
+import { trpc } from "../../server/client";
 
 export default function DLTCrawlerPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [lotteryList, setLotteryList] = useState<DLTItem[]>([]);
-  const [listLoading, setListLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedYear, setSelectedYear] = useState<string>("2025");
   const pageSize = 10;
 
-  const fetchList = async (page: number = 1) => {
-    setListLoading(true);
-    try {
-      const res = await fetch(
-        `/api/crawl-dlt?page=${page}&pageSize=${pageSize}`,
-      );
-      const data = await res.json();
-      const pageData = data?.data;
-      if (Array.isArray(pageData.list)) {
-        // 解析每个item的openNumbers
-        const parsedData = pageData.list.map(
-          (item: { openNumbers: string | object }) => ({
-            ...item,
-            openNumbers:
-              typeof item.openNumbers === "string"
-                ? JSON.parse(item.openNumbers)
-                : item.openNumbers,
-          }),
-        );
-        setLotteryList(parsedData);
-        setTotalPages(Math.ceil(pageData.total / pageSize));
-        setCurrentPage(page);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setListLoading(false);
-    }
-  };
+  // trpc hooks
+  const {
+    data,
+    isLoading: listLoading,
+    refetch,
+  } = trpc.dlt.getList.useQuery({ page: currentPage, pageSize });
+  const mutation = trpc.dlt.fetchAndSave.useMutation();
 
   useEffect(() => {
-    fetchList(1);
-  }, []);
+    if (data?.data?.total) {
+      setTotalPages(Math.ceil(data.data.total / pageSize));
+    }
+  }, [data, pageSize]);
 
   const handlePageChange = (page: number) => {
-    fetchList(page);
+    setCurrentPage(page);
   };
 
   const handleStart = async () => {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch("/api/crawl-dlt", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ year: selectedYear }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setResult(`爬取并写入成功，新增 ${data.count} 条数据。`);
-        fetchList(1);
+      const res = await mutation.mutateAsync({ year: selectedYear });
+      if (res.success) {
+        setResult(`爬取并写入成功，新增 ${res.count} 条数据。`);
+        refetch();
       } else {
-        setResult(`失败: ${data.error}`);
+        setResult("失败");
       }
     } catch (e) {
       setResult(`请求异常: ${e instanceof Error ? e.message : String(e)}`);
@@ -179,7 +141,7 @@ export default function DLTCrawlerPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lotteryList.map((item) => (
+                  {data?.data?.list.map((item) => (
                     <TableRow key={item.issueNumber}>
                       <TableCell>{item.issueNumber}</TableCell>
                       <TableCell>{formatDate(item.openDate)}</TableCell>
